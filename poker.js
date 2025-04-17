@@ -1719,7 +1719,7 @@ function poker() {
     var bg;
 
     // ⛓️ Новый адрес WebSocket-соединения (замени на свой)
-    var g = "ws://localhost:8080";
+    var g = "ws://localhost:3004";
 
     s("MSG Connecting to " + g + " ...");
     U.ws = new WebSocket(g);
