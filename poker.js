@@ -1,7 +1,7 @@
 function poker() {
   var U = {};
   U.android = navigator.userAgent.indexOf("Android") > -1;
-  U.clientVersion = "7.34";
+  U.clientVersion = "7.21";
   U.copyright = "2025";
   U.accountURL = "";
   U.actionQueue = [];
