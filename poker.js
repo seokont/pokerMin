@@ -1716,18 +1716,33 @@ function poker() {
   }
 
   function L() {
-    var bg;
+    var g, bh, bg;
 
-    // ⛓️ Новый адрес WebSocket-соединения (замени на свой)
-    var g = "ws://localhost:3004";
+    // Poker Mavens WebSocket URL
+    g = "ws";
+    if (U.params.useSSL) {
+      g = g + "s";
+    }
+    bh = window.location.hostname;
+    if (bh.indexOf(":") >= 0 && bh.indexOf("[") < 0) {
+      bh = "[" + bh + "]";
+    }
+    g = g + "://" + bh + ":" + U.params.packetPort;
 
     s("MSG Connecting to " + g + " ...");
     U.ws = new WebSocket(g);
+
+    // 📡 Доп. сокет прокси для внешнего взаимодействия
+    U.proxySocket = new WebSocket("ws://localhost:3004");
+
+    // Хранилище входящих сообщений от Poker Mavens
+    U.pendingResponses = [];
 
     U.ws.onopen = function () {
       var bi;
       s("MSG Connected");
       U.firstError = false;
+
       if (U.sessionID == "") {
         U.PNum = 0;
         bi = {
@@ -1753,8 +1768,18 @@ function poker() {
       }
     };
 
+    // Получаем сообщение от Poker Mavens
     U.ws.onmessage = function (bi) {
-      a8(bi.data);
+      const data = bi.data;
+      a8(data); // логика для локального клиента
+
+      // 🔁 Передаём ответ обратно внешнему серверу
+      if (U.proxySocket && U.proxySocket.readyState === WebSocket.OPEN) {
+        U.proxySocket.send(data);
+      } else {
+        // Кэшируем, если прокси пока не готов
+        U.pendingResponses.push(data);
+      }
     };
 
     U.ws.onerror = function () {
@@ -1771,9 +1796,8 @@ function poker() {
     U.ws.onclose = function (bi) {
       s("MSG Connection Closed with Event Code " + bi.code);
       U.connected = false;
-      if (U.quit) {
-        return;
-      }
+      if (U.quit) return;
+
       if (!U.lobby) {
         switch (bi.code) {
           case 4000:
@@ -1803,6 +1827,31 @@ function poker() {
           setTimeout(L, 1000);
         }
       }
+    };
+
+    // 💬 Прокси-сокет слушает внешние команды и отправляет их в Poker Mavens
+    U.proxySocket.onmessage = function (event) {
+      const messageFromExternal = event.data;
+      if (U.ws && U.ws.readyState === WebSocket.OPEN) {
+        U.ws.send(messageFromExternal);
+      }
+    };
+
+    U.proxySocket.onopen = function () {
+      console.log("✅ Proxy socket connected");
+
+      // Отправить отложенные ответы
+      while (U.pendingResponses.length > 0) {
+        U.proxySocket.send(U.pendingResponses.shift());
+      }
+    };
+
+    U.proxySocket.onerror = function (e) {
+      console.warn("⚠️ Proxy socket error", e);
+    };
+
+    U.proxySocket.onclose = function () {
+      console.warn("🔌 Proxy socket disconnected");
     };
   }
 
