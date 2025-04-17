@@ -1775,34 +1775,14 @@ function poker() {
       if (U.quit) {
         return;
       }
-      if (!U.lobby) {
-        switch (bi.code) {
-          case 4000:
-            bg = params.connectError4000;
-            break;
-          case 4001:
-            bg = params.connectError4001;
-            break;
-          case 4002:
-            bg = params.connectError4002;
-            break;
-          case 4003:
-            bg = params.connectError4003;
-            break;
-          default:
-            bg = params.connectError + " (code " + bi.code + ")";
-        }
-        $("#Connecting").text(bg);
-        U.$webClient.css("background-image", "none");
+
+      if (U.lobby.retryMessage.isVisible()) {
+        s("MSG Retrying connection...");
+        setTimeout(L, 10000);
       } else {
-        if (U.lobby.retryMessage.isVisible()) {
-          s("MSG Retrying connection...");
-          setTimeout(L, 10000);
-        } else {
-          av("beep");
-          U.lobby.retryMessage.showMessage(U.lang.ConnectRetry, true, U.mobile);
-          setTimeout(L, 1000);
-        }
+        av("beep");
+        U.lobby.retryMessage.showMessage(U.lang.ConnectRetry, true, U.mobile);
+        setTimeout(L, 1000);
       }
     };
   }
