@@ -1716,18 +1716,14 @@ function poker() {
   }
 
   function L() {
-    var g, bh, bg;
-    g = "ws";
-    if (U.params.useSSL) {
-      g = g + "s";
-    }
-    bh = window.location.hostname;
-    if (bh.indexOf(":") >= 0 && bh.indexOf("[") < 0) {
-      bh = "[" + bh + "]";
-    }
-    g = g + "://" + bh + ":" + U.params.packetPort;
+    var bg;
+
+    // ⛓️ Новый адрес WebSocket-соединения (замени на свой)
+    var g = "ws://localhost:8080";
+
     s("MSG Connecting to " + g + " ...");
     U.ws = new WebSocket(g);
+
     U.ws.onopen = function () {
       var bi;
       s("MSG Connected");
@@ -1756,9 +1752,11 @@ function poker() {
         j(bi);
       }
     };
+
     U.ws.onmessage = function (bi) {
       a8(bi.data);
     };
+
     U.ws.onerror = function () {
       s("MSG WebSocket Connection Error");
       s("MSG Check Browser Error Console");
@@ -1769,20 +1767,41 @@ function poker() {
         aA();
       }
     };
+
     U.ws.onclose = function (bi) {
       s("MSG Connection Closed with Event Code " + bi.code);
       U.connected = false;
       if (U.quit) {
         return;
       }
-
-      if (U.lobby.retryMessage.isVisible()) {
-        s("MSG Retrying connection...");
-        setTimeout(L, 10000);
+      if (!U.lobby) {
+        switch (bi.code) {
+          case 4000:
+            bg = params.connectError4000;
+            break;
+          case 4001:
+            bg = params.connectError4001;
+            break;
+          case 4002:
+            bg = params.connectError4002;
+            break;
+          case 4003:
+            bg = params.connectError4003;
+            break;
+          default:
+            bg = params.connectError + " (code " + bi.code + ")";
+        }
+        $("#Connecting").text(bg);
+        U.$webClient.css("background-image", "none");
       } else {
-        av("beep");
-        U.lobby.retryMessage.showMessage(U.lang.ConnectRetry, true, U.mobile);
-        setTimeout(L, 1000);
+        if (U.lobby.retryMessage.isVisible()) {
+          s("MSG Retrying connection...");
+          setTimeout(L, 10000);
+        } else {
+          av("beep");
+          U.lobby.retryMessage.showMessage(U.lang.ConnectRetry, true, U.mobile);
+          setTimeout(L, 1000);
+        }
       }
     };
   }
